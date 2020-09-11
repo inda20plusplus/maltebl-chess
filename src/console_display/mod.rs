@@ -3,8 +3,8 @@ use super::piece_logic::*;
 pub fn print_board(
     board: &[[Option<Piece>; 8]; 8], /*, marked_spots: Option<Vec<(usize, usize)>>*/
 ) {
-    let mut x = 0;
-    let mut y = 0;
+    // let mut x = 0;
+    //let mut y = 0;
     for row in board {
         for space in row {
             print!("|");
@@ -31,10 +31,10 @@ pub fn print_board(
             //     print!(" ")
             // }
             print!("|");
-            x += 1;
+            //   x += 1;
         }
         println!();
         println!("------------------------");
-        y += 1;
+        // y += 1;
     }
 }

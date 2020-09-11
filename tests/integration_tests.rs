@@ -9,28 +9,15 @@ fn it_translates() {
 fn occupied_spot() {
     let mut board: ChessBoard = init_board();
     print_board(board.ref_board());
-    board.add_piece(piece_make(Color::Black, PieceType::Pawn, (0, 0)));
+    board.add_piece(piece_make(Color::Black, PieceType::Pawn), (0, 0));
 }
 
 #[test]
 fn move_piece() {
     let mut board: ChessBoard = init_board();
     print_board(board.ref_board());
-    board.move_piece((1, 1), (1, 2));
+    board.move_illegal((3, 1), (3, 3));
+    board.move_illegal((4, 6), (4, 4));
     print_board(board.ref_board());
-    board.move_piece((1, 2), (1, 0));
-    print_board(board.ref_board());
-    board.move_piece((1, 0), (1, 7));
-    print_board(board.ref_board());
-}
-
-#[test]
-fn check_move() {
-    let mut board: ChessBoard = init_board();
-    print_board(board.ref_board());
-    println!("{:?}", board.legal_moves(board.ref_piece((1, 0)).unwrap()));
-    board.move_piece((3, 1), (6, 3));
-    board.move_piece((6, 6), (6, 4));
-    print_board(board.ref_board());
-    println!("{:?}", board.legal_moves(board.ref_piece((2, 0)).unwrap()));
+    println!("{:?}", board.legal_moves((3, 3)));
 }

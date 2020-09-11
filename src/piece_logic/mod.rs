@@ -16,19 +16,17 @@ pub enum PieceType {
 pub struct Piece {
     pub color: Color,
     pub piece_type: PieceType,
-    pub position: (usize, usize),
     pub movement: ((isize, isize), Option<(isize, isize)>),
     pub has_moved: bool,
     pub moves_continous: bool,
 }
 
-pub fn piece_make(color: Color, piece_type: PieceType, position: (usize, usize)) -> Piece {
+pub fn piece_make(color: Color, piece_type: PieceType) -> Piece {
     Piece {
         color,
-        position,
         has_moved: false,
         movement: match &piece_type {
-            PieceType::Pawn => ((0, 1), None),
+            PieceType::Pawn => ((0, 1), Some((1, 1))),
             PieceType::Rook => ((0, 1), None),
             PieceType::Knight => ((1, 2), Some((2, 1))),
             PieceType::Bishop => ((1, 1), None),

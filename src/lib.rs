@@ -4,8 +4,9 @@ pub mod piece_logic;
 pub mod chess_logic {
     use super::piece_logic::*;
     pub struct ChessBoard {
-        board: [[Option<Piece>; 8]; 8], //Hardcoded size bad?
-        match_running: bool,
+        board: [[Option<Piece>; 8]; 8], //Hardcoded size bad? //flatten to 64, get helper function turn (x,y)-> pos
+        black_king: (usize, usize),
+        white_king: (usize, usize),
         passant_connection: Option<((usize, usize), (usize, usize))>,
     }
 
@@ -25,9 +26,6 @@ pub mod chess_logic {
                 match piece.piece_type {
                     PieceType::Pawn => {
                         let color_modifier = if piece.color == Color::White { 1 } else { -1 };
-                        if !piece.has_moved {
-                            legal_spaces.extend(self.check_move(position, (0, 2 * color_modifier)));
-                        }
                         if let Ok((pos, space)) = self.check_move(position, (0, color_modifier)) {
                             if space.is_none() {
                                 results.push(pos);
@@ -44,7 +42,6 @@ pub mod chess_logic {
                             }
                         }
                     }
-                    PieceType::King => {}
                     _ => {
                         let (movement1, movement2) = piece.movement;
                         legal_spaces.extend(self.check_around(
@@ -75,6 +72,41 @@ pub mod chess_logic {
             results
         }
 
+        fn special_moves(&self, position: (usize, usize)) -> Vec<((usize, usize), (usize, usize))> {
+            let mut special_moves: Vec<((usize, usize), (usize, usize))> = Vec::new();
+            if let Some(piece) = self.ref_piece(position) {
+                let (pos_x, pos_y) = position;
+                if !piece.has_moved {
+                    if piece.piece_type == PieceType::Pawn {
+                        let color_modifier = if piece.color == Color::White { 2 } else { -2 };
+                        if let Ok(target_space) = self.check_move(position, (0, color_modifier)) {
+                            if target_space.1.is_none() {
+                                special_moves.push((target_space.0, (pos_x, pos_y + 1)));
+                            }
+                        }
+                    }
+                    if piece.piece_type == PieceType::King {
+                        let color_modifier = if piece.color == Color::White { 0 } else { 7 };
+                        if let Some(space) = self.check_continous(position, (1, 0)).pop() {
+                            if let Some(rook) = space.1 {
+                                if rook.color == piece.color && !rook.has_moved {
+                                    special_moves.push(((6, color_modifier), (5, color_modifier)));
+                                }
+                            }
+                        }
+                        if let Some(space) = self.check_continous(position, (-1, 0)).pop() {
+                            if let Some(rook) = space.1 {
+                                if rook.color == piece.color && !rook.has_moved {
+                                    special_moves.push(((2, color_modifier), (3, color_modifier)));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            special_moves
+        }
+
         fn check_around(
             &self,
             position: (usize, usize),
@@ -90,7 +122,7 @@ pub mod chess_logic {
                 (-move_x, -move_y),
             ];
             for direction in directions.iter() {
-                if (moves_continous) {
+                if moves_continous {
                     legal_spaces.extend(self.check_continous(position, *direction));
                 } else if let Ok(target_space) = self.check_move(position, *direction) {
                     legal_spaces.push(target_space);
@@ -133,12 +165,62 @@ pub mod chess_logic {
             }
         }
 
-        pub fn move_piece() {}
+        pub fn move_piece(&mut self, move_from: (usize, usize), move_to: (usize, usize)) {
+            let legal_moves = self.legal_moves(move_from);
+            if legal_moves.contains(&move_to) {
+                let piece: Piece = self.board[move_from.1][move_from.0].take().unwrap();
+                self.board[move_to.1][move_to.0] = Some(piece);
+            } else {
+                println!(
+                    "tried to do illegal move! Cannot move from {:?} to {:?}",
+                    move_from, move_to
+                );
+            }
+        }
 
         pub fn move_illegal(&mut self, piece_pos: (usize, usize), new_pos: (usize, usize)) {
             let piece: Piece = self.board[piece_pos.1][piece_pos.0].take().unwrap();
             self.board[new_pos.1][new_pos.0] = Some(piece);
         }
+
+        fn is_threatened(&self, pos: (usize, usize), color: Color) -> bool {
+            let mut direction = (0, 1);
+            if self.is_threatened_from(pos, color, direction, true) {
+                return true;
+            }
+            direction = (1, 1);
+            if self.is_threatened_from(pos, color, direction, true) {
+                return true;
+            }
+            direction = (1, 2);
+            if self.is_threatened_from(pos, color, direction, false) {
+                return true;
+            }
+            direction = (2, 1);
+            if self.is_threatened_from(pos, color, direction, false) {
+                return true;
+            }
+            false
+        }
+
+        fn is_threatened_from(
+            &self,
+            pos: (usize, usize),
+            color: Color,
+            direction: (isize, isize),
+            check_continous: bool,
+        ) -> bool {
+            for space in self.check_around(pos, direction, check_continous) {
+                if let Some(piece) = space.1 {
+                    if piece.color != color && self.legal_moves(space.0).contains(&pos) {
+                        return true;
+                    }
+                }
+            }
+            false
+        }
+
+        fn is_check_mate(&self) {}
 
         pub fn ref_board(&self) -> &[[Option<Piece>; 8]; 8] {
             &self.board
@@ -152,7 +234,8 @@ pub mod chess_logic {
     pub fn init_board() -> ChessBoard {
         let mut board = ChessBoard {
             board: Default::default(),
-            match_running: false,
+            white_king: (0, 0),
+            black_king: (0, 0),
             passant_connection: None,
         };
         place_pieces(&mut board, Color::White);
@@ -172,6 +255,11 @@ pub mod chess_logic {
         board.add_piece(piece_make(c, PieceType::Bishop), (2, y));
         board.add_piece(piece_make(c, PieceType::Queen), (3, y));
         board.add_piece(piece_make(c, PieceType::King), (4, y));
+        if c == Color::White {
+            board.white_king = (4, y)
+        } else {
+            board.black_king = (4, y)
+        };
         board.add_piece(piece_make(c, PieceType::Bishop), (5, y));
         board.add_piece(piece_make(c, PieceType::Knight), (6, y));
         board.add_piece(piece_make(c, PieceType::Rook), (7, y));

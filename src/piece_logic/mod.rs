@@ -1,9 +1,11 @@
+use std::fmt;
+
 #[derive(PartialEq, Copy, Clone)]
 pub enum Color {
     White,
     Black,
 }
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone)]
 pub enum PieceType {
     Pawn,
     Rook,
@@ -13,12 +15,38 @@ pub enum PieceType {
     Queen,
 }
 
+#[derive(Clone)]
 pub struct Piece {
     pub color: Color,
     pub piece_type: PieceType,
     pub movement: ((isize, isize), Option<(isize, isize)>),
     pub has_moved: bool,
     pub moves_continous: bool,
+}
+
+impl fmt::Display for Piece {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let symbol: char = if self.color == Color::White {
+            match self.piece_type {
+                PieceType::Pawn => '\u{265F}',
+                PieceType::Rook => '\u{265C}',
+                PieceType::Knight => '\u{265E}',
+                PieceType::Bishop => '\u{265D}',
+                PieceType::King => '\u{265A}',
+                PieceType::Queen => '\u{265B}',
+            }
+        } else {
+            match self.piece_type {
+                PieceType::Pawn => '\u{2659}',
+                PieceType::Rook => '\u{2656}',
+                PieceType::Knight => '\u{2658}',
+                PieceType::Bishop => '\u{2657}',
+                PieceType::King => '\u{2654}',
+                PieceType::Queen => '\u{2655}',
+            }
+        };
+        write!(f, "{}", symbol)
+    }
 }
 
 pub fn piece_make(color: Color, piece_type: PieceType) -> Piece {

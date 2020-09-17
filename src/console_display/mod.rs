@@ -13,15 +13,8 @@ pub fn print_board(
             // } else {
             //     print!(" ")
             // }
-            if space.is_some() {
-                match space.as_ref().unwrap().piece_type {
-                    PieceType::Pawn => print!("O"),
-                    PieceType::Rook => print!("W"),
-                    PieceType::Knight => print!("R"),
-                    PieceType::Bishop => print!("I"),
-                    PieceType::King => print!("K"),
-                    PieceType::Queen => print!("Q"),
-                }
+            if let Some(piece) = space {
+                print!("{}", piece);
             } else {
                 print!(" ")
             }

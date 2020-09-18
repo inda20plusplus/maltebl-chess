@@ -1,8 +1,8 @@
 use crate::{board_logic::*, console_display::*, *};
 #[test]
 fn it_translates() {
-    assert_eq!(to_coords("a4".to_string()).unwrap(), (1, 4));
-    assert_eq!(to_notation((1, 4)).unwrap(), ("a4"));
+    assert_eq!(to_coords("a5".to_string()).unwrap(), (0, 4));
+    assert_eq!(to_notation((0, 4)).unwrap(), ("a5"));
 }
 #[test]
 #[should_panic(expected = "Tried to add piece at non-empty space at (0, 0)")]
@@ -92,6 +92,22 @@ fn finds_checked() {
     let mut board: ChessBoard = init_board();
     board.add_piece(piece_make(Color::White, PieceType::King), (3, 0));
     board.add_piece(piece_make(Color::Black, PieceType::Rook), (3, 3));
+    print_board(board.ref_board());
+    assert_eq!(true, board.is_checked(Color::White))
+}
+
+#[test]
+fn does_promotion() {
+    let mut board: ChessBoard = init_board();
+    board.add_piece(piece_make(Color::White, PieceType::King), (0, 0));
+    board.add_piece(piece_make(Color::Black, PieceType::Pawn), (3, 1));
+    if board
+        .move_piece((3, 1), ((3, 0), None))
+        .unwrap()
+        .contains("Promotion")
+    {
+        board.promote((3, 0), PieceType::Queen);
+    }
     print_board(board.ref_board());
     assert_eq!(true, board.is_checked(Color::White))
 }

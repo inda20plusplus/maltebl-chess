@@ -31,6 +31,20 @@ impl ChessBoard {
             panic!("Tried to add piece at non-empty space at {:?}", position)
         }
     }
+
+    pub fn promote(&mut self, position: (usize, usize), piece_type: PieceType)-> Result<String, String>{
+        if let Some(piece) = self.ref_piece(position){
+            if piece.piece_type == PieceType::Pawn && position.1 == if piece.color == Color::White { 7} else { 0 } && piece_type != PieceType::King{
+                self.board[position.1][position.0] = Some(piece_make(piece.color, piece_type));
+                Ok(format!("Promoted piece at {:?} to {}", position, self.ref_piece(position).unwrap()))
+            }else{
+                Err("Tried to promote unit at wrong place or of wrong type".to_string())
+            }
+        }else{
+            Err("Tried to promote an empty space!".to_string())
+        }
+    }
+
     pub fn move_piece(
         &mut self,
         position: (usize, usize),
@@ -43,6 +57,7 @@ impl ChessBoard {
                         let (pos_x, pos_y) = mov.0;
                         self.force_move(position, mov.0)?;
                         self.passant_connection = Some(((pos_x, pos_y - 1), (pos_x, pos_y)));
+
                         Ok(format!(
                             "{}{} {}",
                             self.ref_piece(mov.0).unwrap(),
@@ -319,7 +334,7 @@ impl ChessBoard {
         piece_pos: (usize, usize),
         new_pos: (usize, usize),
     ) -> Result<String, String> {
-        if let Some(piece) = self.board[piece_pos.1][piece_pos.0].take() {
+        if let Some(mut piece) = self.board[piece_pos.1][piece_pos.0].take() {
             if piece.piece_type == PieceType::King{
                 if piece.color == Color::White{
                     self.white_king = new_pos;
@@ -327,6 +342,7 @@ impl ChessBoard {
                     self.black_king = new_pos;
                 }
             }
+            piece.moved();
             self.board[new_pos.1][new_pos.0] = Some(piece);
             Ok(format!("Moved from {:?} to {:?}", piece_pos, new_pos))
         } else {

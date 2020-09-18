@@ -24,6 +24,14 @@ pub struct Piece {
     pub moves_continous: bool,
 }
 
+impl Piece {
+    pub fn moved(&mut self) {
+        if !self.has_moved {
+            self.has_moved = true;
+        }
+    }
+}
+
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let symbol: char = if self.color == Color::White {

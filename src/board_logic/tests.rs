@@ -19,10 +19,27 @@ fn pawn_moves() {
     let mut board: ChessBoard = init_board();
     board.standard_pieces(Color::White);
     board.standard_pieces(Color::Black);
-    board.force_move((3, 1), (3, 3)).expect("force_move panic");
-    board.force_move((4, 6), (4, 4)).expect("force_move panic");
+    board.force_move((4, 6), (4, 2)).expect("force_move panic");
     print_board(board.ref_board());
-    assert_eq!(board.regular_moves((4, 4)), vec![(3, 3), (4, 3)])
+    let mut moves = board.regular_moves((3, 1));
+    moves.push(board.special_moves((3, 1)).pop().unwrap().0);
+    assert_eq!(moves, vec![(3, 2), (4, 2), (3, 3)])
+}
+
+#[test]
+fn passant() {
+    let mut board: ChessBoard = init_board();
+    board.standard_pieces(Color::White);
+    board.standard_pieces(Color::Black);
+    board.force_move((4, 6), (4, 3)).expect("force_move panic");
+    print_board(board.ref_board());
+    board.move_piece((3, 1), ((3, 3), Some(SpecialMove::Pawn2Step)));
+    print_board(board.ref_board());
+    for mov in board.get_moves((4, 3)) {
+        println!("{:?}", mov.0);
+    }
+    board.move_piece((4, 3), ((3, 2), None));
+    print_board(board.ref_board());
 }
 #[test]
 fn continous_moves() {
@@ -76,7 +93,7 @@ fn finds_checked() {
     board.add_piece(piece_make(Color::White, PieceType::King), (3, 0));
     board.add_piece(piece_make(Color::Black, PieceType::Rook), (3, 3));
     print_board(board.ref_board());
-    assert_eq!(true, board.is_checked())
+    assert_eq!(true, board.is_checked(Color::White))
 }
 #[test]
 fn self_check() {
@@ -93,16 +110,19 @@ fn self_check() {
 fn check_mate() {
     let mut board: ChessBoard = init_board();
     board.add_piece(piece_make(Color::White, PieceType::King), (7, 7));
-    board.add_piece(piece_make(Color::Black, PieceType::Knight), (6, 5));
+    board.add_piece(piece_make(Color::Black, PieceType::Knight), (5, 5));
     board.add_piece(piece_make(Color::Black, PieceType::Rook), (7, 6));
     print_board(board.ref_board());
+    assert_eq!(true, board.self_check((7, 7), (6, 6)));
     assert_eq!(true, board.is_checkmate(Color::White));
     let mut board2: ChessBoard = init_board();
     board2.standard_pieces(Color::Black);
     board2.standard_pieces(Color::White);
-    board2.force_move((2, 1), (2, 2)).expect("force_move panic");
-    board2.force_move((3, 6), (3, 4)).expect("force_move panic");
-    board2.force_move((1, 1), (1, 3)).expect("force_move panic");
+    board2.force_move((5, 1), (5, 2)).expect("force_move panic");
+    board2.force_move((4, 6), (4, 4)).expect("force_move panic");
+    print_board(board2.ref_board());
+    assert_eq!(false, board2.is_checkmate(Color::White));
+    board2.force_move((6, 1), (6, 3)).expect("force_move panic");
     board2.force_move((3, 7), (7, 3)).expect("force_move panic");
     print_board(board2.ref_board());
     assert_eq!(true, board2.is_checkmate(Color::White))

@@ -1,33 +1,17 @@
 use super::piece_logic::*;
 
-pub fn print_board(
-    board: &[[Option<Piece>; 8]; 8], /*, marked_spots: Option<Vec<(usize, usize)>>*/
-) {
-    // let mut x = 0;
-    //let mut y = 0;
-    for row in board {
-        for space in row {
+pub fn print_board(board: &[[Option<Piece>; 8]; 8]) {
+    for y in (0..board.len()).rev() {
+        for x in 0..board[0].len() {
             print!("|");
-            // if has_marked_spots && marked_spots.unwrap().contains(&(x, y)) {
-            //     print!("(");
-            // } else {
-            //     print!(" ")
-            // }
-            if let Some(piece) = space {
+            if let Some(piece) = &board[y][x] {
                 print!("{}", piece);
             } else {
                 print!(" ")
             }
-            // if marked_spots.unwrap().contains(&(x, y)) {
-            //     print!("(");
-            // } else {
-            //     print!(" ")
-            // }
             print!("|");
-            //   x += 1;
         }
         println!();
         println!("------------------------");
-        // y += 1;
     }
 }

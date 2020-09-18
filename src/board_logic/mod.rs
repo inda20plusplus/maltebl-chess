@@ -31,6 +31,73 @@ impl ChessBoard {
             panic!("Tried to add piece at non-empty space at {:?}", position)
         }
     }
+    pub fn move_piece(
+        &mut self,
+        position: (usize, usize),
+        mov: ((usize, usize), Option<SpecialMove>),
+    ) -> Result<String, String> {
+        if self.get_moves(position).contains(&mov) {
+            if let Some(special_move) = mov.1 {
+                match special_move {
+                    SpecialMove::Pawn2Step => {
+                        let (pos_x, pos_y) = mov.0;
+                        self.force_move(position, mov.0)?;
+                        self.passant_connection = Some(((pos_x, pos_y - 1), (pos_x, pos_y)));
+                        Ok(format!(
+                            "{}{} {}",
+                            self.ref_piece(mov.0).unwrap(),
+                            super::to_notation(position).ok().unwrap(),
+                            super::to_notation(position).ok().unwrap()
+                        ))
+                    }
+                    SpecialMove::CastlingLeft => {
+                        let color = self.ref_piece(position).unwrap().color;
+                        let pos_y = if color == Color::White { 0 } else { 7 };
+                        self.force_move(position, (2, pos_y))?;
+                        self.force_move((0, pos_y), (2, pos_y))?;
+                        Ok("O-O-O".to_string())
+                    }
+                    SpecialMove::CastlingRight => {
+                        let color = self.ref_piece(position).unwrap().color;
+                        let pos_y = if color == Color::White { 0 } else { 7 };
+                        self.force_move(position, (6, pos_y))?;
+                        self.force_move((0, pos_y), (6, pos_y))?;
+                        Ok("O-O".to_string())
+                    }
+                }
+            } else {
+                self.force_move(position, mov.0)?;
+                let piece = self.ref_piece(mov.0).unwrap();
+                let mut result = format!(
+                    "{}{} {}",
+                    piece,
+                    super::to_notation(position).ok().unwrap(),
+                    super::to_notation(position).ok().unwrap()
+                );
+                if piece.piece_type == PieceType::Pawn && mov.0.1 == if piece.color == Color::White { 7} else { 0 }{
+                    result = format!(
+                        "{}{} {} Promotion",
+                        piece,
+                        super::to_notation(position).ok().unwrap(),
+                        super::to_notation(position).ok().unwrap()
+                    );
+                }else{
+                    
+                }
+                if let Some((passant_pos, pawn_pos)) = self.passant_connection {
+                    if mov.0 == passant_pos {
+                        self.board[pawn_pos.1][pawn_pos.0] = None;
+                    }
+                }
+                Ok(result)
+            }
+        } else {
+            Err(format!(
+                "Tried to do illegal move! piece at {:?} cannot move to {:?}",
+                position, mov.0,
+            ))
+        }
+    }
 
     pub fn get_moves(
         &self,
@@ -178,12 +245,17 @@ impl ChessBoard {
     ) -> Vec<((usize, usize), Option<&Piece>)> {
         let mut legal_spaces: Vec<((usize, usize), Option<&Piece>)> = Vec::new();
         let (move_x, move_y) = moveset;
-        let directions = [
+        let directions = if move_x == 0|| move_y == 0{[
             (move_x, move_y),
-            (-move_x, move_y),
             (move_x, -move_y),
+            (-move_y, move_x),
+            (move_y, move_x),
+        ]}else{[
+            (move_x, move_y),
+            (move_x, -move_y),
+            (-move_x, move_y),
             (-move_x, -move_y),
-        ];
+        ] };
         for direction in directions.iter() {
             if moves_continous {
                 legal_spaces.extend(self.check_continous(position, *direction));
@@ -221,6 +293,12 @@ impl ChessBoard {
         }
         let new_pos = (new_x as usize, new_y as usize);
         let target_space = self.ref_piece(new_pos);
+        if let Some(connection) = self.passant_connection{
+            if new_pos == connection.0{
+                let target_space = self.ref_piece(connection.1);
+                return Ok((new_pos, target_space))
+            }
+        }
         if target_space.is_some() {
             Ok((new_pos, target_space))
         } else {
@@ -230,39 +308,10 @@ impl ChessBoard {
 
     fn self_check(&self, move_from: (usize, usize), move_to: (usize, usize)) -> bool {
         let mut test = self.clone_chess();
-        let piece: Piece = test.board[move_from.1][move_from.0].take().unwrap();
-        test.board[move_to.1][move_to.0] = Some(piece);
-        test.is_checked()
-    }
-
-    pub fn move_piece(
-        &mut self,
-        player_color: Color,
-        move_from: (usize, usize),
-        move_to: (usize, usize),
-    ) -> Result<String, String> {
-        if let Some(piece) = self.ref_piece(move_from) {
-            if piece.color == player_color {
-                if self.regular_moves(move_from).contains(&move_to) {
-                    let piece: Piece = self.board[move_from.1][move_from.0].take().unwrap();
-                    self.board[move_to.1][move_to.0] = Some(piece);
-                    Ok(format!(
-                        "{} {}",
-                        super::to_notation(move_from).unwrap(),
-                        super::to_notation(move_to).unwrap()
-                    ))
-                } else {
-                    Err(format!(
-                        "tried to do illegal move! Cannot move from {:?} to {:?}",
-                        move_from, move_to
-                    ))
-                }
-            } else {
-                Err("That is not your piece!".to_string())
-            }
-        } else {
-            Err("Tried to move empty space!".to_string())
-        }
+        let piece = test.ref_piece(move_from).unwrap();
+        let color = piece.color;
+        test.force_move(move_from, move_to);
+        test.is_checked(color)
     }
 
     fn force_move(
@@ -271,6 +320,13 @@ impl ChessBoard {
         new_pos: (usize, usize),
     ) -> Result<String, String> {
         if let Some(piece) = self.board[piece_pos.1][piece_pos.0].take() {
+            if piece.piece_type == PieceType::King{
+                if piece.color == Color::White{
+                    self.white_king = new_pos;
+                }else{
+                    self.black_king = new_pos;
+                }
+            }
             self.board[new_pos.1][new_pos.0] = Some(piece);
             Ok(format!("Moved from {:?} to {:?}", piece_pos, new_pos))
         } else {
@@ -315,37 +371,37 @@ impl ChessBoard {
         false
     }
 
-    pub fn is_checked(&self) -> bool {
-        let king_pos = if self.turn.0 == Color::White {
+    pub fn is_checked(&self, color: Color) -> bool {
+        let king_pos = if color == Color::White {
             self.white_king
         } else {
             self.black_king
         };
-        self.is_threatened(king_pos, self.turn.0)
+        self.is_threatened(king_pos, color)
     }
 
     pub fn is_checkmate(&self, color: Color) -> bool {
-        let player_color = self.turn.0;
-        let king_pos = if player_color == Color::White {
+        let king_pos = if color == Color::White {
             self.white_king
         } else {
             self.black_king
         };
         if self.is_threatened(king_pos, color) {
-            if self.regular_moves(king_pos).is_empty() {
+            if !self.get_moves(king_pos).is_empty() {
                 return false;
             }
             for y in 0..self.ref_board().len() {
                 for x in 0..self.ref_board()[0].len() {
                     if let Some(piece) = self.ref_piece((x, y)) {
-                        if piece.color == player_color && self.regular_moves((x, y)).is_empty() {
+                        if piece.color == color && !self.get_moves((x, y)).is_empty() {
                             return false;
                         }
                     }
                 }
             }
+            return true;
         }
-        true
+        false
     }
 
     pub fn standard_pieces(&mut self, color: Color) {

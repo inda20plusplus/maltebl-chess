@@ -33,12 +33,12 @@ fn passant() {
     board.standard_pieces(Color::Black);
     board.force_move((4, 6), (4, 3)).expect("force_move panic");
     print_board(board.ref_board());
-    board.move_piece((3, 1), ((3, 3), Some(SpecialMove::Pawn2Step)));
+    board.move_piece((3, 1), (3, 3));
     print_board(board.ref_board());
     for mov in board.get_moves((4, 3)) {
         println!("{:?}", mov.0);
     }
-    board.move_piece((4, 3), ((3, 2), None));
+    board.move_piece((4, 3), (3, 2));
     print_board(board.ref_board());
 }
 #[test]
@@ -102,7 +102,7 @@ fn does_promotion() {
     board.add_piece(piece_make(Color::White, PieceType::King), (0, 0));
     board.add_piece(piece_make(Color::Black, PieceType::Pawn), (3, 1));
     if board
-        .move_piece((3, 1), ((3, 0), None))
+        .move_piece((3, 1), (3, 0))
         .unwrap()
         .contains("Promotion")
     {
@@ -142,4 +142,31 @@ fn check_mate() {
     board2.force_move((3, 7), (7, 3)).expect("force_move panic");
     print_board(board2.ref_board());
     assert_eq!(true, board2.is_checkmate(Color::White))
+}
+
+#[test]
+fn finds_mov() {
+    let mut board: ChessBoard = init_board();
+    board.standard_pieces(Color::White);
+    board.standard_pieces(Color::Black);
+    board.force_move((3, 1), (3, 3)).expect("force_move panic");
+    board.force_move((3, 0), (3, 1)).expect("force_move panic");
+    print_board(board.ref_board());
+    let mut queen_moves = vec![
+        (0, 4),
+        (1, 3),
+        (2, 2),
+        (3, 2),
+        (3, 0),
+        (4, 2),
+        (5, 3),
+        (6, 4),
+        (7, 5),
+    ];
+    queen_moves.sort();
+    let mut movs = board.get_moves((3, 1));
+    movs.retain(|(mov, _)| *mov == (1, 3));
+    for (mov, special) in movs {
+        println!("{:?} {}", mov, { special == None });
+    }
 }

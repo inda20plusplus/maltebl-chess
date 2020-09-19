@@ -7,8 +7,6 @@ pub struct ChessBoard {
     white_king: (usize, usize),
     black_king: (usize, usize),
     passant_connection: Option<((usize, usize), (usize, usize))>,
-    history: Vec<((usize, usize), (usize, usize))>,
-    turn: (Color, usize),
 }
 
 impl ChessBoard {
@@ -32,15 +30,26 @@ impl ChessBoard {
         }
     }
 
-    pub fn promote(&mut self, position: (usize, usize), piece_type: PieceType)-> Result<String, String>{
-        if let Some(piece) = self.ref_piece(position){
-            if piece.piece_type == PieceType::Pawn && position.1 == if piece.color == Color::White { 7} else { 0 } && piece_type != PieceType::King{
+    pub fn promote(
+        &mut self,
+        position: (usize, usize),
+        piece_type: PieceType,
+    ) -> Result<String, String> {
+        if let Some(piece) = self.ref_piece(position) {
+            if piece.piece_type == PieceType::Pawn
+                && position.1 == if piece.color == Color::White { 7 } else { 0 }
+                && piece_type != PieceType::King
+            {
                 self.board[position.1][position.0] = Some(piece_make(piece.color, piece_type));
-                Ok(format!("Promoted piece at {:?} to {}", position, self.ref_piece(position).unwrap()))
-            }else{
+                Ok(format!(
+                    "Promoted piece at {:?} to {}",
+                    position,
+                    self.ref_piece(position).unwrap()
+                ))
+            } else {
                 Err("Tried to promote unit at wrong place or of wrong type".to_string())
             }
-        }else{
+        } else {
             Err("Tried to promote an empty space!".to_string())
         }
     }
@@ -48,21 +57,26 @@ impl ChessBoard {
     pub fn move_piece(
         &mut self,
         position: (usize, usize),
-        mov: ((usize, usize), Option<SpecialMove>),
+        mov: (usize, usize),
     ) -> Result<String, String> {
-        if self.get_moves(position).contains(&mov) {
-            if let Some(special_move) = mov.1 {
+        if self.ref_piece(position).is_none() {
+            return Err("Tried to move empty space!".to_string());
+        }
+        let mut possible_moves = self.get_moves(position);
+        possible_moves.retain(|(move_, _)| *move_ == mov);
+        if !possible_moves.is_empty() {
+            let (movement, special_move) = possible_moves.pop().unwrap();
+            if let Some(special_move) = special_move {
                 match special_move {
                     SpecialMove::Pawn2Step => {
-                        let (pos_x, pos_y) = mov.0;
-                        self.force_move(position, mov.0)?;
+                        let (pos_x, pos_y) = movement;
+                        self.force_move(position, movement)?;
                         self.passant_connection = Some(((pos_x, pos_y - 1), (pos_x, pos_y)));
 
                         Ok(format!(
-                            "{}{} {}",
-                            self.ref_piece(mov.0).unwrap(),
+                            "{} {}",
                             super::to_notation(position).ok().unwrap(),
-                            super::to_notation(position).ok().unwrap()
+                            super::to_notation(mov).ok().unwrap()
                         ))
                     }
                     SpecialMove::CastlingLeft => {
@@ -81,26 +95,26 @@ impl ChessBoard {
                     }
                 }
             } else {
-                self.force_move(position, mov.0)?;
-                let piece = self.ref_piece(mov.0).unwrap();
+                self.force_move(position, movement)?;
+                let piece = self.ref_piece(movement).unwrap();
                 let mut result = format!(
                     "{}{} {}",
-                    piece,
+                    piece.piece_type,
                     super::to_notation(position).ok().unwrap(),
-                    super::to_notation(position).ok().unwrap()
+                    super::to_notation(mov).ok().unwrap()
                 );
-                if piece.piece_type == PieceType::Pawn && mov.0.1 == if piece.color == Color::White { 7} else { 0 }{
+                if piece.piece_type == PieceType::Pawn
+                    && movement.1 == if piece.color == Color::White { 7 } else { 0 }
+                {
                     result = format!(
-                        "{}{} {} Promotion",
-                        piece,
+                        "{} {} Promotion",
                         super::to_notation(position).ok().unwrap(),
-                        super::to_notation(position).ok().unwrap()
+                        super::to_notation(mov).ok().unwrap()
                     );
-                }else{
-                    
+                } else {
                 }
                 if let Some((passant_pos, pawn_pos)) = self.passant_connection {
-                    if mov.0 == passant_pos {
+                    if movement == passant_pos {
                         self.board[pawn_pos.1][pawn_pos.0] = None;
                     }
                 }
@@ -260,17 +274,21 @@ impl ChessBoard {
     ) -> Vec<((usize, usize), Option<&Piece>)> {
         let mut legal_spaces: Vec<((usize, usize), Option<&Piece>)> = Vec::new();
         let (move_x, move_y) = moveset;
-        let directions = if move_x == 0|| move_y == 0{[
-            (move_x, move_y),
-            (move_x, -move_y),
-            (-move_y, move_x),
-            (move_y, move_x),
-        ]}else{[
-            (move_x, move_y),
-            (move_x, -move_y),
-            (-move_x, move_y),
-            (-move_x, -move_y),
-        ] };
+        let directions = if move_x == 0 || move_y == 0 {
+            [
+                (move_x, move_y),
+                (move_x, -move_y),
+                (-move_y, move_x),
+                (move_y, move_x),
+            ]
+        } else {
+            [
+                (move_x, move_y),
+                (move_x, -move_y),
+                (-move_x, move_y),
+                (-move_x, -move_y),
+            ]
+        };
         for direction in directions.iter() {
             if moves_continous {
                 legal_spaces.extend(self.check_continous(position, *direction));
@@ -292,6 +310,11 @@ impl ChessBoard {
             if target_space.1.is_none() {
                 legal_spaces.extend(self.check_continous(target_space.0, direction));
             }
+            if self.passant_connection.is_some()
+                && self.passant_connection.unwrap().0 == target_space.0
+            {
+                legal_spaces.extend(self.check_continous(target_space.0, direction));
+            }
         }
         legal_spaces
     }
@@ -308,10 +331,10 @@ impl ChessBoard {
         }
         let new_pos = (new_x as usize, new_y as usize);
         let target_space = self.ref_piece(new_pos);
-        if let Some(connection) = self.passant_connection{
-            if new_pos == connection.0{
+        if let Some(connection) = self.passant_connection {
+            if new_pos == connection.0 {
                 let target_space = self.ref_piece(connection.1);
-                return Ok((new_pos, target_space))
+                return Ok((new_pos, target_space));
             }
         }
         if target_space.is_some() {
@@ -325,7 +348,8 @@ impl ChessBoard {
         let mut test = self.clone_chess();
         let piece = test.ref_piece(move_from).unwrap();
         let color = piece.color;
-        test.force_move(move_from, move_to);
+        test.force_move(move_from, move_to)
+            .expect("Error during checking for self-check:");
         test.is_checked(color)
     }
 
@@ -335,10 +359,10 @@ impl ChessBoard {
         new_pos: (usize, usize),
     ) -> Result<String, String> {
         if let Some(mut piece) = self.board[piece_pos.1][piece_pos.0].take() {
-            if piece.piece_type == PieceType::King{
-                if piece.color == Color::White{
+            if piece.piece_type == PieceType::King {
+                if piece.color == Color::White {
                     self.white_king = new_pos;
-                }else{
+                } else {
                     self.black_king = new_pos;
                 }
             }
@@ -379,8 +403,12 @@ impl ChessBoard {
     ) -> bool {
         for spaces in self.check_around(pos, moveset, check_continous) {
             if let (p_pos, Some(piece)) = spaces {
-                if piece.color != color && self.regular_moves(p_pos).contains(&pos) {
-                    return true;
+                if piece.color != color {
+                    for mov in self.regular_moves(p_pos) {
+                        if mov == pos {
+                            return true;
+                        }
+                    }
                 }
             }
         }
@@ -447,8 +475,6 @@ impl ChessBoard {
             white_king: self.white_king,
             black_king: self.black_king,
             passant_connection: self.passant_connection,
-            history: self.history.clone(),
-            turn: self.turn,
         }
     }
 
@@ -474,7 +500,5 @@ pub fn init_board() -> ChessBoard {
         white_king: (256, 256),
         black_king: (256, 256),
         passant_connection: None,
-        history: Vec::new(),
-        turn: (Color::White, 1),
     }
 }

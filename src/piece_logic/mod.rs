@@ -24,6 +24,20 @@ pub struct Piece {
     pub moves_continous: bool,
 }
 
+impl fmt::Display for PieceType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let symbol = match self {
+            PieceType::Pawn => ' ',
+            PieceType::Rook => 'R',
+            PieceType::Knight => 'N',
+            PieceType::Bishop => 'B',
+            PieceType::King => 'K',
+            PieceType::Queen => 'Q',
+        };
+        write!(f, "{}", symbol)
+    }
+}
+
 impl Piece {
     pub fn moved(&mut self) {
         if !self.has_moved {

@@ -13,8 +13,8 @@ pub mod chess_game {
     }
 
     impl ChessGame {
-        pub fn get_piece(&self, position: (usize, usize)) -> &Option<Piece> {
-            self.chess_board.get_piece(position)
+        pub fn get_board(&self) -> Board {
+            self.chess_board.get_board()
         }
 
         pub fn pick_piece(&self, input: String) -> Result<Vec<String>, String> {

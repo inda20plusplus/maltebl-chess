@@ -10,6 +10,10 @@ pub struct ChessBoard {
 }
 
 impl ChessBoard {
+    pub fn get_piece(&self, position: (usize, usize)) -> &Option<Piece> {
+        &self.board[position.1][position.0]
+    }
+
     fn add_piece(&mut self, piece: Piece, position: (usize, usize)) {
         if self.board[position.1][position.0].is_none() {
             if piece.piece_type == PieceType::King {

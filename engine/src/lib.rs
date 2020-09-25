@@ -13,6 +13,10 @@ pub mod chess_game {
     }
 
     impl ChessGame {
+        pub fn get_piece(&self, position: (usize, usize)) -> &Option<Piece> {
+            self.chess_board.get_piece(position)
+        }
+
         pub fn pick_piece(&self, input: String) -> Result<Vec<String>, String> {
             let piece_position = to_coords(input).expect("Error:");
             if let Some(piece) = self.chess_board.ref_piece(piece_position) {

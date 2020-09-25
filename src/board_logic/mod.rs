@@ -114,7 +114,7 @@ impl ChessBoard {
                 } else {
                 }
                 if let Some((passant_pos, pawn_pos)) = self.passant_connection {
-                    if movement == passant_pos {
+                    if movement == passant_pos && piece.piece_type == PieceType::Pawn {
                         self.board[pawn_pos.1][pawn_pos.0] = None;
                     }
                 }

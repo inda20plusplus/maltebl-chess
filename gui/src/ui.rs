@@ -1,7 +1,6 @@
 use crate::color_util::ColorUtil;
 use crate::delegate::action;
 use crate::state::{AppState, Position};
-use crate::style::*;
 use crate::tile::Tile;
 
 use maltebl_chess::{
@@ -10,6 +9,10 @@ use maltebl_chess::{
 };
 
 use druid::{widget::*, WidgetExt, *};
+
+const NUM_ROWS: i32 = 8;
+const NUM_COLS: i32 = 8;
+
 
 pub fn main_ui() -> impl Widget<AppState> {
     make_board()

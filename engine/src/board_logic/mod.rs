@@ -1,15 +1,21 @@
 use super::piece_logic::*;
 
+pub type Board = [[Option<Piece>; 8]; 8]; //Hardcoded size bad? //flatten to 64, get helper function turn (x,y)-> pos
+
 #[cfg(test)]
 mod tests;
 pub struct ChessBoard {
-    board: [[Option<Piece>; 8]; 8], //Hardcoded size bad? //flatten to 64, get helper function turn (x,y)-> pos
+    board: Board,
     white_king: (usize, usize),
     black_king: (usize, usize),
     passant_connection: Option<((usize, usize), (usize, usize))>,
 }
 
 impl ChessBoard {
+    pub fn get_board(&self) -> Board {
+        self.board.clone()
+    }
+
     fn add_piece(&mut self, piece: Piece, position: (usize, usize)) {
         if self.board[position.1][position.0].is_none() {
             if piece.piece_type == PieceType::King {

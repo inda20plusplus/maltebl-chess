@@ -1,0 +1,12 @@
+[package]
+name = "gui"
+version = "0.1.0"
+authors = ["Leonard Pauli <leonardpauli@me.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+maltebl-chess = { path = "../engine" }
+druid = "0.6.0"
+

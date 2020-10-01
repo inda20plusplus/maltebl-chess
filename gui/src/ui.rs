@@ -13,7 +13,6 @@ use druid::{widget::*, WidgetExt, *};
 const NUM_ROWS: i32 = 8;
 const NUM_COLS: i32 = 8;
 
-
 pub fn main_ui() -> impl Widget<AppState> {
     make_board()
 }
@@ -103,11 +102,11 @@ fn make_tile(pos: Position) -> impl Widget<AppState> {
 
 fn piece_char(piece: &Piece) -> &str {
     match piece.piece_type {
-        PieceType::King => "♚",
-        PieceType::Queen => "♛",
-        PieceType::Rook => "♜",
-        PieceType::Knight => "♞",
-        PieceType::Bishop => "♝",
-        PieceType::Pawn => "♟︎",
+        PieceType::King => "K",
+        PieceType::Queen => "Q",
+        PieceType::Rook => "R",
+        PieceType::Knight => "N",
+        PieceType::Bishop => "B",
+        PieceType::Pawn => "P",
     }
 }

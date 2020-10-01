@@ -25,7 +25,7 @@ fn test_turns() {
 
 #[test]
 fn pick_piece() {
-    let mut chess = init_standard_chess();
+    let chess = init_standard_chess();
     assert_eq!(
         vec!["f3", "f4"],
         chess.pick_piece("f2".to_string()).unwrap()

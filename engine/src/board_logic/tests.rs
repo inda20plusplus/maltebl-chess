@@ -33,12 +33,12 @@ fn passant() {
     board.standard_pieces(Color::Black);
     board.force_move((4, 6), (4, 3)).expect("force_move panic");
     print_board(board.ref_board());
-    board.move_piece((3, 1), (3, 3));
+    board.move_piece((3, 1), (3, 3)).unwrap();
     print_board(board.ref_board());
     for mov in board.get_moves((4, 3)) {
         println!("{:?}", mov.0);
     }
-    board.move_piece((4, 3), (3, 2));
+    board.move_piece((4, 3), (3, 2)).unwrap();
     print_board(board.ref_board());
 }
 #[test]
@@ -106,7 +106,7 @@ fn does_promotion() {
         .unwrap()
         .contains("Promotion")
     {
-        board.promote((3, 0), PieceType::Queen);
+        board.promote((3, 0), PieceType::Queen).unwrap();
     }
     print_board(board.ref_board());
     assert_eq!(true, board.is_checked(Color::White))

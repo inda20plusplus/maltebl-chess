@@ -1,5 +1,7 @@
 language: rust
 
+os: osx
+
 before_install:
 - rustup component add clippy
 - rustup component add rustfmt

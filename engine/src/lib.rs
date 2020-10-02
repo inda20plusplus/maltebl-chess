@@ -3,30 +3,31 @@ pub mod console_display;
 pub mod piece_logic;
 
 /// Engine for the boardgame "chess"
-/// 
+///
 /// Minimal interaction example:
 /// ```
 /// fn example() -> Result<String, String> {
+/// #    use maltebl_chess::{chess_game::*, *};
 ///     let mut game = init_standard_chess();
-/// 
+///
 ///     // construct command from clicked tiles
 ///     let origin = (0 as usize, 1 as usize);
 ///     let target = (0 as usize, 2 as usize);
 ///     let command = format!("{} {}", to_notation(origin)?, to_notation(target)?);
-/// 
+///
 ///     let msg = game.move_piece(command.clone())?;
-/// 
+///
 ///     game.print_board();
 ///     
 ///     // get the character for a piece at a specific position
 ///     let piece_char = game.get_board()[0][0].as_ref()
 ///         .map(|p| format!("{}", p))
 ///         .unwrap_or(" ".to_owned());
-/// 
+///
 ///     println!("{}, {}, {}", piece_char, msg, command);
 ///     Ok("".to_owned())
 /// }
-/// example().unwrap()
+/// example().unwrap();
 /// ````
 pub mod chess_game {
     use super::*;

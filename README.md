@@ -1,3 +1,5 @@
 # maltebl-chess
 
-User interactions and game structure in chess_game in lib, should be everything needed for GUI
+[![Build Status](https://travis-ci.org/inda20plusplus/maltebl-chess.svg?branch=master)](https://travis-ci.org/inda20plusplus/maltebl-chess)
+
+Rust chess client with GUI!

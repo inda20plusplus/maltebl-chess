@@ -109,19 +109,18 @@ impl ChessBoard {
                     super::to_notation(position).ok().unwrap(),
                     super::to_notation(mov).ok().unwrap()
                 );
-                if piece.piece_type == PieceType::Pawn
-                    && movement.1 == if piece.color == Color::White { 7 } else { 0 }
-                {
-                    result = format!(
-                        "{} {} Promotion",
-                        super::to_notation(position).ok().unwrap(),
-                        super::to_notation(mov).ok().unwrap()
-                    );
-                } else {
-                }
-                if let Some((passant_pos, pawn_pos)) = self.passant_connection {
-                    if movement == passant_pos && piece.piece_type == PieceType::Pawn {
-                        self.board[pawn_pos.1][pawn_pos.0] = None;
+                if piece.piece_type == PieceType::Pawn {
+                    if movement.1 == if piece.color == Color::White { 7 } else { 0 } {
+                        result = format!(
+                            "{} {} Promotion",
+                            super::to_notation(position).ok().unwrap(),
+                            super::to_notation(mov).ok().unwrap()
+                        );
+                    }
+                    if let Some((passant_pos, pawn_pos)) = self.passant_connection {
+                        if movement == passant_pos && piece.piece_type == PieceType::Pawn {
+                            self.board[pawn_pos.1][pawn_pos.0] = None;
+                        }
                     }
                 }
                 Ok(result)

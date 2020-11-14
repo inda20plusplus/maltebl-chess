@@ -3,14 +3,15 @@ use crate::state::Position;
 
 use druid::{widget::*, *};
 
-pub struct Tile<T> {
+pub struct Tile<T: druid::Data, R: Widget<T>> {
     position: Position,
-    label: Label<T>,
+    inner: R,
+    _t: std::marker::PhantomData<T>,
 }
 
-impl<T: druid::Data> Tile<T> {
-    pub fn new(position: Position, label: Label<T>) -> Self {
-        Self { position, label }
+impl<T: druid::Data, R: Widget<T>> Tile<T, R> {
+    pub fn new(position: Position, inner: R) -> Self {
+        Self { position, inner, _t: std::marker::PhantomData::default() }
     }
 
     pub fn on_click(
@@ -21,7 +22,7 @@ impl<T: druid::Data> Tile<T> {
     }
 }
 
-impl<T: druid::Data> Widget<T> for Tile<T> {
+impl<T: druid::Data, R: Widget<T>> Widget<T> for Tile<T, R> {
     fn event(&mut self, ctx: &mut EventCtx, event: &Event, _data: &mut T, _env: &Env) {
         match event {
             Event::MouseDown(_) => {
@@ -38,14 +39,13 @@ impl<T: druid::Data> Widget<T> for Tile<T> {
         }
     }
     fn lifecycle(&mut self, ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &T, env: &Env) {
-        self.label.lifecycle(ctx, event, data, env);
+        self.inner.lifecycle(ctx, event, data, env);
     }
     fn update(&mut self, ctx: &mut UpdateCtx, old_data: &T, data: &T, env: &Env) {
-        self.label.update(ctx, old_data, data, env);
+        self.inner.update(ctx, old_data, data, env);
     }
     fn layout(&mut self, ctx: &mut LayoutCtx, bc: &BoxConstraints, data: &T, env: &Env) -> Size {
-        self.label.layout(ctx, &bc, data, env);
-
+        self.inner.layout(ctx, &bc, data, env);
         bc.max()
     }
     fn paint(&mut self, ctx: &mut PaintCtx, data: &T, env: &Env) {
@@ -61,10 +61,10 @@ impl<T: druid::Data> Widget<T> for Tile<T> {
         );
 
         ctx.fill(bounds, &colo);
-
-        ctx.with_save(|ctx| {
-            ctx.transform(Affine::translate(Vec2::from((8.0, 7.0))));
-            self.label.paint(ctx, data, env);
-        });
+        self.inner.paint(ctx, data, env);
+        // ctx.with_save(|ctx| {
+        //     ctx.transform(Affine::translate(Vec2::from((8.0, 7.0))));
+        //     self.label.paint(ctx, data, env);
+        // });
     }
 }

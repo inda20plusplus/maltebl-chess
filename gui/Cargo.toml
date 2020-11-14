@@ -8,5 +8,4 @@ edition = "2018"
 
 [dependencies]
 maltebl-chess = { path = "../engine" }
-druid = "0.6.0"
-
+druid = { version = "0.6.0", features = ["svg"] }

@@ -60,8 +60,16 @@ impl<T: druid::Data, R: Widget<T>> Widget<T> for Tile<T, R> {
         let is_active = ctx.is_active();
         let colo = ColorUtil::hsl(
             0.1,
-            0.2,
-            if checkerboard { 0.1 } else { 0.5 } + if is_active { 0.2 } else { 0. },
+            if checkerboard { 0.2 } else { 0.2 },
+            if is_active {
+                0.53
+            } else {
+                if checkerboard {
+                    0.3
+                } else {
+                    0.4
+                }
+            },
         );
 
         ctx.fill(bounds, &colo);

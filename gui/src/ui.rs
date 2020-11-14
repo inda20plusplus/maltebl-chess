@@ -49,41 +49,45 @@ fn make_tile(pos: Position) -> impl Widget<AppState> {
     // })
     // .with_text_size(27.);
 
-    let icon: Tile2<AppState> = Tile2::new(pos, Box::new(|pos, data| {
-        data.get_piece(pos).as_ref().and_then(|piece| Some((piece.piece_type.clone(), piece.color)))
-    }));
+    let icon: Tile2<AppState> = Tile2::new(
+        pos,
+        Box::new(|pos, data| {
+            data.get_piece(pos)
+                .as_ref()
+                .and_then(|piece| Some((piece.piece_type.clone(), piece.color)))
+        }),
+    );
 
-    let tile = Tile::new(pos, icon)
-        .on_click(move |ctx, data, _env| {
-            match data.origin {
-                None => {
-                    data.origin = Some(pos);
-                    data.message = None;
-                    // data.origin_available_moves = Some(Arc::new(data.game.chess_board.get_moves(cpos)));
-                }
-                Some(prev) => {
-                    let is_target = prev != pos;
-                    if is_target {
-                        let cpos = (prev.0 as usize, prev.1 as usize);
-                        let tpos = (pos.0 as usize, pos.1 as usize);
-
-                        let mut doit = || -> Result<String, String> {
-                            let command = format!("{} {}", to_notation(cpos)?, to_notation(tpos)?);
-                            ctx.submit_command(Command::new(action::MAKE_MOVE, command), None);
-                            Ok("".to_owned())
-                        };
-
-                        let txt = match doit() {
-                            Err(inner) => format!("Error: {}", inner),
-                            Ok(inner) => format!("{}", inner),
-                        };
-
-                        data.message = if txt.len() > 0 { Some(txt) } else { None };
-                    };
-                    data.origin = None;
-                }
+    let tile = Tile::new(pos, icon).on_click(move |ctx, data, _env| {
+        match data.origin {
+            None => {
+                data.origin = Some(pos);
+                data.message = None;
+                // data.origin_available_moves = Some(Arc::new(data.game.chess_board.get_moves(cpos)));
             }
-        });
+            Some(prev) => {
+                let is_target = prev != pos;
+                if is_target {
+                    let cpos = (prev.0 as usize, prev.1 as usize);
+                    let tpos = (pos.0 as usize, pos.1 as usize);
+
+                    let mut doit = || -> Result<String, String> {
+                        let command = format!("{} {}", to_notation(cpos)?, to_notation(tpos)?);
+                        ctx.submit_command(Command::new(action::MAKE_MOVE, command), None);
+                        Ok("".to_owned())
+                    };
+
+                    let txt = match doit() {
+                        Err(inner) => format!("Error: {}", inner),
+                        Ok(inner) => format!("{}", inner),
+                    };
+
+                    data.message = if txt.len() > 0 { Some(txt) } else { None };
+                };
+                data.origin = None;
+            }
+        }
+    });
 
     tile
 }
@@ -98,21 +102,28 @@ struct Tile2<T: Data> {
 }
 impl<T: Data> Tile2<T> {
     pub fn new(position: Position, piece_maker: PieceVisualMaker<T>) -> Self {
-        Self {position, inner: None, piece: None, piece_maker}
+        Self {
+            position,
+            inner: None,
+            piece: None,
+            piece_maker,
+        }
     }
     fn update_inner(&mut self, data: &T) -> bool {
         let new_type = (*self.piece_maker)(self.position, data);
-        if new_type==self.piece { return false; }
+        if new_type == self.piece {
+            return false;
+        }
 
         self.piece = new_type;
         self.inner = self.piece.as_ref().map(|t| {
             let color = match t.1 {
-                piece_logic::Color::White=> ColorUtil::hsl(0.1, 0.17, 0.72),
-                piece_logic::Color::Black=> ColorUtil::hsl(0.1, 0.3, 0.3),
+                piece_logic::Color::White => ColorUtil::hsl(0.1, 0.17, 0.72),
+                piece_logic::Color::Black => ColorUtil::hsl(0.1, 0.3, 0.3),
             };
 
             let color = format!("{:?}", color);
-            let color = &color[..color.len()-2];
+            let color = &color[..color.len() - 2];
             let svg_data = piece_svg_colored(&t.0, color).parse::<SvgData>();
             Svg::new(svg_data.unwrap()).fix_width(30.0).center()
         });
@@ -125,10 +136,10 @@ impl<T: Data> Widget<T> for Tile2<T> {
 
     fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &T, _env: &Env) {
         match event {
-            LifeCycle::WidgetAdded=> {
+            LifeCycle::WidgetAdded => {
                 self.update_inner(data);
-            },
-            _=> {},
+            }
+            _ => {}
         }
     }
 
@@ -148,7 +159,9 @@ impl<T: Data> Widget<T> for Tile2<T> {
     ) -> Size {
         if let Some(a) = &mut self.inner {
             a.layout(layout_ctx, bc, data, env)
-        } else {bc.max()}
+        } else {
+            bc.max()
+        }
     }
     fn paint(&mut self, ctx: &mut PaintCtx, data: &T, env: &Env) {
         if let Some(a) = &mut self.inner {
@@ -190,4 +203,3 @@ fn piece_svg_colored(piece: &PieceType, color: &str) -> String {
 
     format!("{}{}", new_start, &raw[old_start_end..])
 }
-

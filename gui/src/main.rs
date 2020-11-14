@@ -36,7 +36,6 @@ fn main() -> Result<(), PlatformError> {
     Ok(())
 }
 
-
 // use druid::{
 //     widget::{FillStrat, Flex, Svg, SvgData, WidgetExt},
 //     AppLauncher, LocalizedString, Widget, WindowDesc,

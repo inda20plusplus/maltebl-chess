@@ -11,7 +11,11 @@ pub struct Tile<T: druid::Data, R: Widget<T>> {
 
 impl<T: druid::Data, R: Widget<T>> Tile<T, R> {
     pub fn new(position: Position, inner: R) -> Self {
-        Self { position, inner, _t: std::marker::PhantomData::default() }
+        Self {
+            position,
+            inner,
+            _t: std::marker::PhantomData::default(),
+        }
     }
 
     pub fn on_click(

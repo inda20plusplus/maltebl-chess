@@ -62,28 +62,32 @@ fn make_tile(pos: Position) -> impl Widget<AppState> {
         match data.origin {
             None => {
                 data.origin = Some(pos);
-                data.message = None;
+                data.message = Some(format!("{:?}", pos));
                 // data.origin_available_moves = Some(Arc::new(data.game.chess_board.get_moves(cpos)));
             }
             Some(prev) => {
-                let is_target = prev != pos;
-                if is_target {
-                    let cpos = (prev.0 as usize, prev.1 as usize);
-                    let tpos = (pos.0 as usize, pos.1 as usize);
+                if prev == pos {
+                    data.origin = None;
+                    data.message = None;
+                    return;
+                }
 
-                    let mut doit = || -> Result<String, String> {
-                        let command = format!("{} {}", to_notation(cpos)?, to_notation(tpos)?);
-                        ctx.submit_command(Command::new(action::MAKE_MOVE, command), None);
-                        Ok("".to_owned())
-                    };
+                let cpos = (prev.0 as usize, prev.1 as usize);
+                let tpos = (pos.0 as usize, pos.1 as usize);
 
-                    let txt = match doit() {
-                        Err(inner) => format!("Error: {}", inner),
-                        Ok(inner) => format!("{}", inner),
-                    };
-
-                    data.message = if txt.len() > 0 { Some(txt) } else { None };
+                let mut doit = || -> Result<String, String> {
+                    let command = format!("{} {}", to_notation(cpos)?, to_notation(tpos)?);
+                    ctx.submit_command(Command::new(action::MAKE_MOVE, command), None);
+                    Ok("".to_owned())
                 };
+
+                let txt = match doit() {
+                    Err(inner) => format!("Error: {}", inner),
+                    Ok(inner) => format!("{}", inner),
+                };
+
+                data.message = if txt.len() > 0 { Some(txt) } else { None };
+
                 data.origin = None;
             }
         }
@@ -119,7 +123,7 @@ impl<T: Data> Tile2<T> {
         self.inner = self.piece.as_ref().map(|t| {
             let color = match t.1 {
                 piece_logic::Color::White => ColorUtil::hsl(0.1, 0.17, 0.72),
-                piece_logic::Color::Black => ColorUtil::hsl(0.1, 0.3, 0.3),
+                piece_logic::Color::Black => ColorUtil::hsl(0.1, 0.3, 0.1),
             };
 
             let color = format!("{:?}", color);

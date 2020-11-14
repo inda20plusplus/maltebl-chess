@@ -1,3 +1,4 @@
+#![allow(clippy::many_single_char_names)]
 use druid::piet::Color;
 
 pub struct ColorUtil;

@@ -5,7 +5,7 @@ pub enum Color {
     White,
     Black,
 }
-#[derive(PartialEq, Clone)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum PieceType {
     Pawn,
     Rook,

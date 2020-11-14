@@ -19,15 +19,14 @@ impl ColorUtil {
             t -= 1.
         };
         if t < 1. / 6. {
-            return p + (q - p) * 6. * t;
+            p + (q - p) * 6. * t
+        } else if t < 1. / 2. {
+            q
+        } else if t < 2. / 3. {
+            p + (q - p) * (2. / 3. - t) * 6.
+        } else {
+            p
         }
-        if t < 1. / 2. {
-            return q;
-        }
-        if t < 2. / 3. {
-            return p + (q - p) * (2. / 3. - t) * 6.;
-        }
-        return p;
     }
 
     fn hsl_to_rgb(h: f64, s: f64, l: f64) -> (u8, u8, u8) {
@@ -36,9 +35,10 @@ impl ColorUtil {
         let b;
 
         if s == 0.0 {
+            // achromatic
             r = l;
             g = l;
-            b = l; // achromatic
+            b = l;
         } else {
             let q = if l < 0.5 { l * (1. + s) } else { l + s - l * s };
 
@@ -48,10 +48,10 @@ impl ColorUtil {
             b = Self::hue_to_rgb(p, q, h - 1. / 3.);
         }
 
-        return (
+        (
             (r * 255.).round() as u8,
             (g * 255.).round() as u8,
             (b * 255.).round() as u8,
-        );
+        )
     }
 }

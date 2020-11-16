@@ -1,5 +1,5 @@
 [package]
-name = "gui"
+name = "tcp_chess_com"
 version = "0.1.0"
 authors = ["Leonard Pauli <leonardpauli@me.com>"]
 edition = "2018"
@@ -7,7 +7,3 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-maltebl-chess = { path = "../engine" }
-druid = { version = "0.6.0", features = ["svg"] }
-tcp_chess_com = { path = "../tcp_chess_com" }
-clap = "3.0.0-beta.2"

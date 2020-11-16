@@ -60,13 +60,17 @@ pub mod chess_game {
             Ok(possible_moves)
         }
 
+        pub fn current_player(&self) -> Color {
+            self.turn.0
+        }
+
         pub fn move_piece(&mut self, input: String) -> Result<String, String> {
             if input.len() == 5 {
                 let mut input = input.split_whitespace();
                 let move_from = to_coords(input.next().unwrap().to_string())?;
                 let move_to = to_coords(input.next().unwrap().to_string())?;
                 if let Some(piece) = self.chess_board.ref_piece(move_from) {
-                    if piece.color != self.turn.0 {
+                    if piece.color != self.current_player() {
                         return Err("That is not your piece!".to_string());
                     }
                 } else {
@@ -80,17 +84,16 @@ pub mod chess_game {
                     history.push_str(mov);
                     self.history.push(history);
                     self.turn = (
-                        if self.turn.0 == Color::White {
-                            Color::Black
-                        } else {
-                            Color::White
+                        match self.current_player() {
+                            Color::Black => Color::White,
+                            Color::White => Color::Black,
                         },
                         1 + self.turn.1,
                     );
-                    if self.chess_board.is_checked(self.turn.0) {
+                    if self.chess_board.is_checked(self.current_player()) {
                         result = Ok(result.unwrap() + " Check!");
                     }
-                    if self.chess_board.is_checkmate(self.turn.0) {
+                    if self.chess_board.is_checkmate(self.current_player()) {
                         return Ok("Game is over! It's a checkmate!".to_string());
                     }
                 }

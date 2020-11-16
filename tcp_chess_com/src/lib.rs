@@ -43,6 +43,7 @@ mod tests {
 /// message: on unknown, respond with Decline
 pub mod connection_lib {
 
+	#[derive(Debug)]
 	pub enum MessageType {
 		/// in response to illigal or unwanted action
 		Decline,
@@ -59,6 +60,7 @@ pub mod connection_lib {
 		Resign,
 	}
 
+	#[derive(Debug)]
 	pub enum Message {
 		Decline,
 		Move(Move),
@@ -132,6 +134,7 @@ pub mod connection_lib {
 		}
 	}
 
+	#[derive(Debug)]
 	pub enum MoveType {
 		Standard,
 		EnPassant,
@@ -140,6 +143,7 @@ pub mod connection_lib {
 		CastleQueenside,
 	}
 
+	#[derive(Debug)]
 	pub struct Position {
 		pub x: u8,
 		pub y: u8,
@@ -160,6 +164,7 @@ pub mod connection_lib {
 		}
 	}
 
+	#[derive(Debug)]
 	pub enum Move {
 		Standard {
 			origin: Position,
@@ -268,6 +273,7 @@ pub mod connection_lib {
 		}
 	}
 
+	#[derive(Debug)]
 	pub enum PieceType {
 		Knight,
 		Bishop,

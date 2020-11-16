@@ -1,3 +1,5 @@
+#![allow(clippy::clippy::let_and_return)]
+
 use crate::color_util::ColorUtil;
 use crate::delegate::action;
 use crate::state::{AppState, Position};
@@ -54,7 +56,7 @@ fn make_tile(pos: Position) -> impl Widget<AppState> {
         Box::new(|pos, data| {
             data.get_piece(pos)
                 .as_ref()
-                .and_then(|piece| Some((piece.piece_type.clone(), piece.color)))
+                .map(|piece| (piece.piece_type.clone(), piece.color))
         }),
     );
 
@@ -83,10 +85,10 @@ fn make_tile(pos: Position) -> impl Widget<AppState> {
 
                 let txt = match doit() {
                     Err(inner) => format!("Error: {}", inner),
-                    Ok(inner) => format!("{}", inner),
+                    Ok(inner) => inner,
                 };
 
-                data.message = if txt.len() > 0 { Some(txt) } else { None };
+                data.message = if !txt.is_empty() { Some(txt) } else { None };
 
                 data.origin = None;
             }
@@ -139,11 +141,8 @@ impl<T: Data> Widget<T> for Tile2<T> {
     fn event(&mut self, _ctx: &mut EventCtx, _event: &Event, _data: &mut T, _env: &Env) {}
 
     fn lifecycle(&mut self, _ctx: &mut LifeCycleCtx, event: &LifeCycle, data: &T, _env: &Env) {
-        match event {
-            LifeCycle::WidgetAdded => {
-                self.update_inner(data);
-            }
-            _ => {}
+        if let LifeCycle::WidgetAdded = event {
+            self.update_inner(data);
         }
     }
 

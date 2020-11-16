@@ -36,6 +36,8 @@ struct Opts {
 
 /**
 
+(networking extention created by Leonard Pauli, autum 2020, inda)
+ (1s delay intentionally used to show async:ness)
 Data flow overview:
 
 white
@@ -118,91 +120,91 @@ fn main() -> Result<(), PlatformError> {
 
     if networked {
         println!("Networked.");
-
-        let (net_tx, net_rx) = mpsc::channel::<con::Message>();
-
-        if let Some(addr) = opts.net_connect {
-            thread::spawn(move || {
-                println!("Connecting to {}", addr);
-
-                let mut stream = TcpStream::connect(addr).unwrap();
-                println!("Connection established.");
-                println!("Awaiting remote's players initial move.");
-
-                loop {
-                    if let Some(err) = await_receive_move(&mut stream, &event_sink, &net_rx).err() {
-                        println!("ERR: {:?}", err);
-                        break;
-                    };
-                    if let Some(err) = await_transmit_move(&mut stream, &event_sink, &net_rx).err()
-                    {
-                        println!("ERR: {:?}", err);
-                        break;
-                    };
-                }
-            });
-        } else {
-            thread::spawn(move || {
-                let addr = opts.net_listen.unwrap();
-                let listener = TcpListener::bind(&addr).unwrap();
-                println!("Awaiting connection at {}", addr);
-
-                for stream in listener.incoming() {
-                    // TODO: a lot to improve; stability, clean code, feature set, ...
-
-                    let mut stream = stream.unwrap();
-                    println!("Connection established.");
-                    println!("Make a move as initial message.");
-
-                    loop {
-                        if let Some(err) =
-                            await_transmit_move(&mut stream, &event_sink, &net_rx).err()
-                        {
-                            println!("ERR: {:?}", err);
-                            break;
-                        };
-
-                        if let Some(err) =
-                            await_receive_move(&mut stream, &event_sink, &net_rx).err()
-                        {
-                            println!("ERR: {:?}", err);
-                            break;
-                        };
-                    }
-                }
-            });
-        }
-
-        // input from delegate
-        thread::spawn(move || {
-            for received in delegate_rx {
-                println!("from delegate: {:?}", received);
-                thread::sleep(Duration::from_secs(1));
-
-                let message = match &received[..] {
-                    "ok" => con::Message::Accept,
-                    _ => {
-                        // TODO: error handling
-                        let mut parts = received
-                            .split(' ')
-                            .into_iter()
-                            .map(|a| to_coords(a.to_owned()).unwrap())
-                            .map(|(x, y)| con::Position::new(x as u8, y as u8));
-                        let origin = parts.next().unwrap();
-                        let target = parts.next().unwrap();
-
-                        con::Message::Move(con::Move::Standard { origin, target })
-                    }
-                };
-
-                net_tx.send(message).unwrap();
-            }
-        });
+        setup_networking(&opts, event_sink, delegate_rx);
     }
 
     app.delegate(delegate).launch(data)?;
 
     Ok(())
+}
+
+fn setup_networking(opts: &Opts, event_sink: ExtEventSink, delegate_rx: mpsc::Receiver<String>) {
+    let (net_tx, net_rx) = mpsc::channel::<con::Message>();
+
+    if let Some(addr) = opts.net_connect.as_ref() {
+        let addr = addr.clone();
+        thread::spawn(move || {
+            println!("Connecting to {}", addr);
+
+            let mut stream = TcpStream::connect(addr).unwrap();
+            println!("Connection established.");
+            println!("Awaiting remote's players initial move.");
+
+            loop {
+                if let Some(err) = await_receive_move(&mut stream, &event_sink, &net_rx).err() {
+                    println!("ERR: {:?}", err);
+                    break;
+                };
+                if let Some(err) = await_transmit_move(&mut stream, &event_sink, &net_rx).err() {
+                    println!("ERR: {:?}", err);
+                    break;
+                };
+            }
+        });
+    } else {
+        let addr = opts.net_listen.as_ref().unwrap();
+        let addr = addr.clone();
+        thread::spawn(move || {
+            let listener = TcpListener::bind(&addr).unwrap();
+            println!("Awaiting connection at {}", addr);
+
+            for stream in listener.incoming() {
+                // TODO: a lot to improve; stability, clean code, feature set, ...
+
+                let mut stream = stream.unwrap();
+                println!("Connection established.");
+                println!("Make a move as initial message.");
+
+                loop {
+                    if let Some(err) = await_transmit_move(&mut stream, &event_sink, &net_rx).err()
+                    {
+                        println!("ERR: {:?}", err);
+                        break;
+                    };
+
+                    if let Some(err) = await_receive_move(&mut stream, &event_sink, &net_rx).err() {
+                        println!("ERR: {:?}", err);
+                        break;
+                    };
+                }
+            }
+        });
+    }
+
+    // input from delegate
+    thread::spawn(move || {
+        for received in delegate_rx {
+            println!("from delegate: {:?}", received);
+            thread::sleep(Duration::from_secs(1));
+
+            let message = match &received[..] {
+                "ok" => con::Message::Accept,
+                _ => {
+                    // TODO: error handling
+                    let mut parts = received
+                        .split(' ')
+                        .map(|a| to_coords(a.to_owned()).unwrap())
+                        .map(|(x, y)| con::Position::new(x as u8, y as u8));
+                    let origin = parts.next().unwrap();
+                    let target = parts.next().unwrap();
+
+                    con::Message::Move(con::Move::Standard { origin, target })
+                }
+            };
+
+            net_tx.send(message).unwrap();
+        }
+    });
 }
 
 enum ResponseKind {
@@ -220,19 +222,18 @@ fn await_transmit_move(
     net_rx: &mpsc::Receiver<con::Message>,
 ) -> Result<(), String> {
     let message = net_rx.recv().unwrap();
-    let message = message.code();
     println!("Message: {:?}", message);
-    stream.write(&message[..]).unwrap();
+    let message = message.code();
+    stream.write_all(&message[..]).unwrap();
     stream.flush().unwrap();
 
     let mut buffer = [0; 32];
     stream.read(&mut buffer).unwrap();
 
-    println!("Response: {:?}", buffer);
     let message = con::Message::from_code(&buffer[..]);
 
     let response_kind = {
-        println!("Received: {:?}", message.code());
+        println!("Received: {:?}", message);
 
         match message {
             con::Message::Accept => ResponseKind::Noop,
@@ -253,9 +254,9 @@ fn await_transmit_move(
         }
     };
     if let Some(response) = response {
-        let response = response.code();
         println!("Response: {:?}", response);
-        stream.write(&response[..]).unwrap();
+        let response = response.code();
+        stream.write_all(&response[..]).unwrap();
         stream.flush().unwrap();
     }
     Ok(())
@@ -269,11 +270,9 @@ fn await_receive_move(
     let mut buffer = [0; 32];
     stream.read(&mut buffer).unwrap();
 
-    println!("Request: {:?}", buffer);
     let message = con::Message::from_code(&buffer[..]);
-
     let response_kind = {
-        println!("Received: {:?}", message.code());
+        println!("Received: {:?}", message);
 
         match message {
             con::Message::Accept => ResponseKind::Noop,
@@ -305,9 +304,9 @@ fn await_receive_move(
         }
     };
     if let Some(response) = response {
-        let response = response.code();
         println!("Response: {:?}", response);
-        stream.write(&response[..]).unwrap();
+        let response = response.code();
+        stream.write_all(&response[..]).unwrap();
         stream.flush().unwrap();
     }
     Ok(())

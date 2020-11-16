@@ -27,7 +27,10 @@ impl Delegate {
                 return Err("not your (local player) turn".to_owned());
             }
 
-            let sender = self.net_sender.as_ref().ok_or("no net_sender".to_owned())?;
+            let sender = self
+                .net_sender
+                .as_ref()
+                .ok_or_else(|| "no net_sender".to_owned())?;
             sender
                 .send(command.to_owned())
                 .map_err(|_| "unable to send".to_owned())?;
@@ -42,7 +45,7 @@ impl Delegate {
     fn attempt_move_from_network(&mut self, command: &str) -> Result<String, String> {
         let local_player = self
             .single_player
-            .ok_or("single_player_white not set".to_owned())?;
+            .ok_or_else(|| "single_player_white not set".to_owned())?;
         if local_player == self.game.current_player() {
             return Err("local players turn".to_owned());
         }
@@ -50,7 +53,10 @@ impl Delegate {
         // TODO: validate move + answer ok/decline + perform if ok
         // for now: just assume everything went smooth
 
-        let sender = self.net_sender.as_ref().ok_or("no net_sender".to_owned())?;
+        let sender = self
+            .net_sender
+            .as_ref()
+            .ok_or_else(|| "no net_sender".to_owned())?;
         sender
             .send("ok".to_owned())
             .map_err(|_| "unable to send".to_owned())?;
